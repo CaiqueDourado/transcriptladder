@@ -150,6 +150,7 @@ A transcriptladder usa ferramentas públicas como elas são. Ela não faz login 
 
 ## Relacionados
 
+- [llm-cost-kit](https://github.com/CaiqueDourado/llm-cost-kit): quanto cada chamada de LLM custou de verdade, do mesmo crawler.
 - [scrapladder](https://github.com/CaiqueDourado/scrapladder): a mesma escada para páginas web (HTTP, TLS de navegador, navegadores headless, APIs de scraping).
 - [pros-e-contras-ptbr](https://github.com/CaiqueDourado/pros-e-contras-ptbr): prós e contras a partir de reviews em português.
 
