@@ -43,7 +43,7 @@ This library is the transcript step of that crawler, rewritten as a package. In 
 
 ![Which method produced each transcript](docs/img/methods.png)
 
-- **yt-dlp** got 38% of them, and another 41% came from yt-dlp with cookies exported from the author's own browser. That variant is not in this library (see Scope), so expect more of those videos to fall to Whisper or to fail.
+- **yt-dlp** got 38% of them, and another 41% came from yt-dlp with the cookies of a logged-in YouTube session. That is the `yt_dlp_subs_cookies` rung here, off by default (see [Logged-in session](#logged-in-session-opt-in)). Without it, expect more of those videos to fall to Whisper or to fail.
 - **Whisper** covered 16%, the videos with no captions.
 - **youtube-transcript-api** was added in May 2026 and got 5%.
 
@@ -65,7 +65,7 @@ flowchart TD
   V -- no --> I["invalid_url"]
   V -- yes --> P{"paused by<br/>a recent 429?"}
   P -- yes --> RL["rate_limited<br/>retry_after"]
-  P -- no --> T1["tier 1: captions<br/>youtube-transcript-api → caption URL → yt-dlp subs<br/>(order learned inside the tier)"]
+  P -- no --> T1["tier 1: captions<br/>youtube-transcript-api → caption URL → yt-dlp subs<br/>(+ yt-dlp with cookies, if set)<br/>order learned inside the tier"]
   T1 -- "text passes check" --> OK["ok<br/>text, segments, SRT, language"]
   T1 -- "no captions in these languages" --> T2
   T1 -- "error or not a transcript" --> T2["tier 2: speech recognition<br/>faster-whisper → Whisper<br/>audio: stream URL + ffmpeg, first hour"]
@@ -90,6 +90,7 @@ flowchart LR
 | `youtube_transcript_api` | `youtube-transcript-api` | 1 | 0.95 |
 | `caption_url` | `yt-dlp` (command) + `requests` | 1 | 0.92 |
 | `yt_dlp_subs` | `yt-dlp` (command) | 1 | 0.90 |
+| `yt_dlp_subs_cookies` | `yt-dlp` + your cookies (opt-in) | 1 | 0.85 |
 | `faster_whisper` | `faster-whisper` + `ffmpeg` | 2 | 0.80 |
 | `whisper` | `openai-whisper` + `ffmpeg` | 2 | 0.65 |
 
@@ -116,13 +117,28 @@ transcriptladder https://youtu.be/VIDEO_ID --lang pt,en          # plain text
 transcriptladder VIDEO_ID OTHER_ID --srt --memory tl.json        # SRT, several videos
 ```
 
+## Logged-in session (opt-in)
+
+More and more often YouTube answers "Sign in to confirm you're not a bot", or asks to confirm age. yt-dlp's documented answer is to send the cookies of a logged-in session. In the author's crawler that path produced 41% of the transcripts.
+
+```python
+from transcriptladder import Transcriber, YtDlp
+
+t = Transcriber(["pt", "en"], ytdlp=YtDlp(cookies="youtube-cookies.txt"))   # or cookies_from_browser="firefox"
+```
+
+```bash
+transcriptladder VIDEO_ID --cookies youtube-cookies.txt
+```
+
+- **Off by default.** The `yt_dlp_subs_cookies` rung only exists when cookies are set.
+- **Used only when needed.** It starts after the rungs without cookies, and the cookies are not used for metadata or audio. If the other rungs keep failing, the learned priority can move it up.
+- **Use a secondary account.** YouTube can flag or restrict an account that fetches many videos.
+- **Cookies are a password.** Keep the file out of git (`*cookies*.txt` is in `.gitignore`) and export it again when it expires.
+
 ## Scope
 
-transcriptladder uses public tools as they are. It does not:
-
-- load cookies from your browser;
-- log in;
-- download the video itself, only captions or the audio needed for speech recognition.
+transcriptladder uses public tools as they are. It does not log in by itself, and it does not download the video, only captions or the audio needed for speech recognition.
 
 `YtDlp(impersonate="chrome")` turns on yt-dlp's own browser impersonation, and `YtDlp(extra_args=[...])` passes arguments to every yt-dlp call as given. What you transcribe and how you use it is your responsibility; check YouTube's terms and the rights of the video owners.
 

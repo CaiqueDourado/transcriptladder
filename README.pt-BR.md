@@ -43,7 +43,7 @@ Esta biblioteca é a etapa de transcrição desse crawler, reescrita como pacote
 
 ![Qual método gerou cada transcrição](docs/img/methods.pt-BR.png)
 
-- **yt-dlp** pegou 38% delas, e outros 41% vieram do yt-dlp com cookies exportados do navegador do próprio autor. Essa variante não está nesta biblioteca (veja Escopo), então espere que mais desses vídeos caiam no Whisper ou falhem.
+- **yt-dlp** pegou 38% delas, e outros 41% vieram do yt-dlp com os cookies de uma sessão logada do YouTube. Aqui isso é o degrau `yt_dlp_subs_cookies`, desligado por padrão (veja [Sessão logada](#sessão-logada-opcional)). Sem ele, espere que mais desses vídeos caiam no Whisper ou falhem.
 - **Whisper** cobriu 16%, os vídeos sem legenda.
 - **youtube-transcript-api** entrou em maio de 2026 e pegou 5%.
 
@@ -65,7 +65,7 @@ flowchart TD
   V -- não --> I["invalid_url"]
   V -- sim --> P{"pausado por<br/>um 429 recente?"}
   P -- sim --> RL["rate_limited<br/>retry_after"]
-  P -- não --> T1["nível 1: legendas<br/>youtube-transcript-api → URL da legenda → legendas do yt-dlp<br/>(ordem aprendida dentro do nível)"]
+  P -- não --> T1["nível 1: legendas<br/>youtube-transcript-api → URL da legenda → legendas do yt-dlp<br/>(+ yt-dlp com cookies, se configurado)<br/>ordem aprendida dentro do nível"]
   T1 -- "texto passa na checagem" --> OK["ok<br/>texto, trechos, SRT, idioma"]
   T1 -- "sem legenda nesses idiomas" --> T2
   T1 -- "erro ou não é transcrição" --> T2["nível 2: reconhecimento de fala<br/>faster-whisper → Whisper<br/>áudio: URL do stream + ffmpeg, primeira hora"]
@@ -90,6 +90,7 @@ flowchart LR
 | `youtube_transcript_api` | `youtube-transcript-api` | 1 | 0,95 |
 | `caption_url` | `yt-dlp` (comando) + `requests` | 1 | 0,92 |
 | `yt_dlp_subs` | `yt-dlp` (comando) | 1 | 0,90 |
+| `yt_dlp_subs_cookies` | `yt-dlp` + seus cookies (opcional) | 1 | 0,85 |
 | `faster_whisper` | `faster-whisper` + `ffmpeg` | 2 | 0,80 |
 | `whisper` | `openai-whisper` + `ffmpeg` | 2 | 0,65 |
 
@@ -116,13 +117,28 @@ transcriptladder https://youtu.be/VIDEO_ID --lang pt,en          # texto
 transcriptladder VIDEO_ID OUTRO_ID --srt --memory tl.json        # SRT, vários vídeos
 ```
 
+## Sessão logada (opcional)
+
+Cada vez mais o YouTube responde "Sign in to confirm you're not a bot" ou pede para confirmar a idade. A resposta documentada do yt-dlp é mandar os cookies de uma sessão logada. No crawler do autor, esse caminho gerou 41% das transcrições.
+
+```python
+from transcriptladder import Transcriber, YtDlp
+
+t = Transcriber(["pt", "en"], ytdlp=YtDlp(cookies="youtube-cookies.txt"))   # ou cookies_from_browser="firefox"
+```
+
+```bash
+transcriptladder VIDEO_ID --cookies youtube-cookies.txt
+```
+
+- **Desligado por padrão.** O degrau `yt_dlp_subs_cookies` só existe quando há cookies configurados.
+- **Só quando precisa.** Ele começa depois dos degraus sem cookies, e os cookies não são usados para metadados nem para o áudio. Se os outros degraus falharem muito, a prioridade aprendida pode subi-lo.
+- **Use uma conta secundária.** O YouTube pode marcar ou restringir uma conta que baixa muitos vídeos.
+- **Cookies valem como senha.** Deixe o arquivo fora do git (`*cookies*.txt` está no `.gitignore`) e exporte de novo quando expirar.
+
 ## Escopo
 
-A transcriptladder usa ferramentas públicas como elas são. Ela não:
-
-- carrega cookies do seu navegador;
-- faz login;
-- baixa o vídeo em si, só a legenda ou o áudio necessário para o reconhecimento de fala.
+A transcriptladder usa ferramentas públicas como elas são. Ela não faz login sozinha e não baixa o vídeo, só a legenda ou o áudio necessário para o reconhecimento de fala.
 
 `YtDlp(impersonate="chrome")` liga a imitação de navegador do próprio yt-dlp, e `YtDlp(extra_args=[...])` repassa argumentos a toda chamada do yt-dlp como vierem. O que você transcreve e como usa é responsabilidade sua; confira os termos do YouTube e os direitos dos donos dos vídeos.
 

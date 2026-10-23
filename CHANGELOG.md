@@ -8,4 +8,5 @@
 - `text.to_segments`: VTT, SRT and YouTube json3 to timed lines, rolling auto-caption repeats removed; `text.check` rejects HTML, stack traces, JSON and too little text.
 - `video_id()` for every YouTube URL form; `Transcript.srt()`.
 - Audio for speech recognition read from the stream URL with ffmpeg, first hour only.
-- CLI: `transcriptladder URL... [--srt]`, `transcriptladder methods`.
+- Opt-in `yt_dlp_subs_cookies` rung with `YtDlp(cookies=...)` or `cookies_from_browser`, used only after the rungs without cookies.
+- CLI: `transcriptladder URL... [--srt] [--cookies FILE]`, `transcriptladder methods`.

@@ -128,6 +128,7 @@ class YtDlpSubs(Rung):
     """yt-dlp writes the subtitle file itself (``--write-subs --write-auto-subs``)."""
 
     name, tier, default_priority = "yt_dlp_subs", 1, 0.9
+    with_cookies = False
 
     def available(self) -> bool:
         return YtDlp().available()
@@ -136,7 +137,7 @@ class YtDlpSubs(Rung):
         out = os.path.join(job.workdir, "%(id)s.%(ext)s")
         res = job.ytdlp.run(["--skip-download", "--write-subs", "--write-auto-subs",
                              "--sub-langs", ",".join(job.languages), "--sub-format", "json3/vtt/best",
-                             "-o", out, job.url])
+                             "-o", out, job.url], with_cookies=self.with_cookies)
         if res.returncode != 0:
             raise RuntimeError((res.stderr or "yt-dlp failed").strip().splitlines()[-1])
         files = glob.glob(os.path.join(job.workdir, f"{job.video_id}.*.*"))
@@ -147,6 +148,19 @@ class YtDlpSubs(Rung):
             if segs:
                 return Got(segs, f.rsplit(".", 2)[-2])
         raise NoCaptions("yt-dlp wrote no subtitle")
+
+
+class YtDlpSubsCookies(YtDlpSubs):
+    """Same as ``yt_dlp_subs``, with the logged-in session configured in ``YtDlp`` (opt-in).
+
+    For videos where YouTube asks to "sign in to confirm you're not a bot" or to confirm age.
+    It comes after the rungs without cookies, so the account is used only when they failed.
+    Added automatically by :class:`Transcriber` when ``YtDlp(cookies=...)`` or
+    ``YtDlp(cookies_from_browser=...)`` is set.
+    """
+
+    name, tier, default_priority = "yt_dlp_subs_cookies", 1, 0.85
+    with_cookies = True
 
 
 # ---------------------------------------------------------------- tier 2: speech recognition

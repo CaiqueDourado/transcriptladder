@@ -90,3 +90,29 @@ def test_learned_priority_reorders_inside_a_tier(tmp_path):
     for _ in range(6):
         tr.transcribe(VID)
     assert [r.name for r in tr.order()] == ["b", "a"]
+
+
+def test_cookies_are_opt_in_and_only_in_the_cookies_rung(monkeypatch):
+    from transcriptladder.video import YtDlp
+    from transcriptladder.rungs import YtDlpSubs, YtDlpSubsCookies
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda b: "/usr/bin/" + b if b == "yt-dlp" else None)
+    plain = YtDlp()
+    assert "--cookies" not in plain._base(with_cookies=True)
+    y = YtDlp(cookies="c.txt")
+    assert "--cookies" not in y._base() and y._base(with_cookies=True)[3:5] == ["--cookies", "c.txt"]
+    assert YtDlp(cookies_from_browser="chrome")._base(with_cookies=True)[3:5] == ["--cookies-from-browser", "chrome"]
+    assert not YtDlpSubs.with_cookies and YtDlpSubsCookies.with_cookies
+    t = Transcriber(["pt"], ytdlp=y)
+    assert "yt_dlp_subs_cookies" in [r.name for r in t.rungs]
+    assert "yt_dlp_subs_cookies" not in [r.name for r in Transcriber(["pt"]).rungs]
+
+
+def test_age_gate_is_not_final_when_cookies_are_set():
+    from transcriptladder.video import YtDlp
+    gate = Fake("subs", 1, 0.9, RuntimeError("Sign in to confirm your age"))
+    with_cookies = Fake("subs_cookies", 1, 0.85, Got(SPEECH))
+    with_cookies.with_cookies = True
+    tr = Transcriber(["pt"], rungs=[gate, with_cookies], ytdlp=YtDlp(cookies="c.txt"), min_interval=0, sleep=lambda s: None)
+    r = tr.transcribe(VID)
+    assert r.ok and r.method == "subs_cookies"

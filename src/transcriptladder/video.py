@@ -50,6 +50,9 @@ class YtDlp:
       read some formats).
     - ``impersonate`` (e.g. ``"chrome"``) uses yt-dlp's own browser impersonation.
     - ``extra_args`` go to every call as given.
+    - ``cookies`` (a Netscape cookies.txt) or ``cookies_from_browser`` (e.g. ``"chrome"``) are
+      yt-dlp's own options for a logged-in session. They are used only by calls made with
+      ``with_cookies=True`` (the ``yt_dlp_subs_cookies`` rung), never by default.
     - One call at a time per process (``YtDlp.lock``): parallel yt-dlp calls are the fastest
       way to a 429.
     """
@@ -58,13 +61,23 @@ class YtDlp:
     impersonate: str | None = None
     extra_args: list[str] = field(default_factory=list)
     timeout: float = 180.0
+    cookies: str | None = None
+    cookies_from_browser: str | None = None
     lock = threading.Lock()
+
+    @property
+    def has_cookies(self) -> bool:
+        return bool(self.cookies or self.cookies_from_browser)
 
     def available(self) -> bool:
         return shutil.which(self.binary) is not None
 
-    def _base(self) -> list[str]:
+    def _base(self, with_cookies: bool = False) -> list[str]:
         args = [self.binary, "--no-playlist", "--no-warnings"]
+        if with_cookies and self.cookies:
+            args += ["--cookies", self.cookies]
+        elif with_cookies and self.cookies_from_browser:
+            args += ["--cookies-from-browser", self.cookies_from_browser]
         for rt in ("deno", "node"):
             if shutil.which(rt):
                 args += ["--js-runtimes", rt]
@@ -73,8 +86,8 @@ class YtDlp:
             args += ["--impersonate", self.impersonate]
         return args + list(self.extra_args)
 
-    def run(self, args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
-        cmd = self._base() + args
+    def run(self, args: list[str], cwd: str | None = None, with_cookies: bool = False) -> subprocess.CompletedProcess:
+        cmd = self._base(with_cookies) + args
         with self.lock:
             res = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, timeout=self.timeout,
                                  stdin=subprocess.DEVNULL)

@@ -9,7 +9,7 @@ from typing import Callable, Iterable
 from scrapladder.memory import Memory
 
 from . import text as T
-from .rungs import Job, NoCaptions, Rung, Silent, default_rungs
+from .rungs import Job, NoCaptions, Rung, Silent, YtDlpSubsCookies, default_rungs
 from .video import RateLimited, YtDlp, video_id
 
 OK = "ok"
@@ -83,7 +83,8 @@ class Transcriber:
     max_audio_seconds:
         Speech recognition reads at most this much audio (default 1 hour).
     ytdlp:
-        A :class:`YtDlp` (``impersonate``, ``extra_args``, ``binary``).
+        A :class:`YtDlp` (``impersonate``, ``extra_args``, ``binary``, and the opt-in
+        ``cookies`` / ``cookies_from_browser`` that add the ``yt_dlp_subs_cookies`` rung).
     """
 
     def __init__(self, languages: Iterable[str] = ("pt", "pt-BR", "en"), *, rungs: Iterable[Rung] | None = None,
@@ -99,6 +100,8 @@ class Transcriber:
         self.min_interval, self.rate_limit_pause = min_interval, rate_limit_pause
         self.max_audio_seconds = max_audio_seconds
         self.ytdlp = ytdlp or YtDlp()
+        if rungs is None and self.ytdlp.has_cookies and self.ytdlp.available():
+            self.rungs.append(YtDlpSubsCookies())
         self._clock, self._sleep = clock, sleep
         self._next_ok = 0.0
         self._paused_until = 0.0
@@ -147,7 +150,10 @@ class Transcriber:
                     return result
                 except Exception as e:
                     msg = str(e).lower()
-                    if any(h in msg for h in _UNAVAILABLE_HINTS):
+                    hints = _UNAVAILABLE_HINTS
+                    if self.ytdlp.has_cookies and not getattr(rung, "with_cookies", False):
+                        hints = tuple(h for h in hints if "sign in" not in h and "members-only" not in h)
+                    if any(h in msg for h in hints):
                         att.outcome, att.reason = "unavailable", str(e)[:120]
                         result.outcome = UNAVAILABLE
                         return result
