@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transcriptladder"
+version = "0.1.0"
+description = "YouTube transcripts that keep working: captions first (youtube-transcript-api, yt-dlp), speech recognition last (faster-whisper, Whisper), learning which method works."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Caique Dourado"}]
+requires-python = ">=3.10"
+dependencies = ["scrapladder @ git+https://github.com/CaiqueDourado/scrapladder", "requests>=2.28"]
+keywords = ["youtube", "transcript", "captions", "subtitles", "yt-dlp", "whisper", "faster-whisper"]
+
+[project.optional-dependencies]
+api = ["youtube-transcript-api>=1.0"]
+ytdlp = ["yt-dlp>=2025.1.1"]
+whisper = ["faster-whisper>=1.0"]
+openai-whisper = ["openai-whisper"]
+all = ["youtube-transcript-api>=1.0", "yt-dlp>=2025.1.1", "faster-whisper>=1.0"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+transcriptladder = "transcriptladder.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/CaiqueDourado/transcriptladder"
+
+[tool.setuptools.packages.find]
+where = ["src"]
