@@ -8,14 +8,14 @@
 
 ![transcriptladder](docs/img/cover.pt-BR.png)
 
-Pega a transcrição de um vídeo do YouTube com o método que estiver funcionando hoje. Os métodos são tentados em ordem:
+Pega a transcrição de um vídeo do YouTube com o método que funcionar hoje. Tenta nesta ordem:
 
 1. **`youtube-transcript-api`**: lê a faixa de legenda direto.
 2. **URL da legenda nos metadados do yt-dlp**: baixada com HTTP comum.
 3. **yt-dlp gravando o arquivo de legenda** ele mesmo (legenda manual ou automática).
 4. **faster-whisper ou Whisper** no áudio, quando o vídeo não tem legenda nenhuma.
 
-A taxa de acerto de cada método fica guardada, então um que vive falhando desce dentro do seu nível. Você recebe texto limpo, trechos com tempo, SRT e o idioma.
+Ele lembra quanto cada método acerta, então o que vive falhando desce dentro do seu nível. Você recebe texto limpo, trechos com tempo, SRT e o idioma.
 
 ```python
 from transcriptladder import Transcriber
@@ -33,13 +33,13 @@ else:
 
 ## De onde vem
 
-O site de análises de produtos do autor resume o que os reviewers do YouTube dizem de cada produto. Isso exige a transcrição de milhares de vídeos, e nenhum método sozinho pega todos:
+O meu site de análise de produtos resume o que os youtubers dizem de cada produto. Para isso precisa da transcrição de milhares de vídeos, e nenhum método pega todos:
 
 - as bibliotecas de legenda quebram quando o YouTube muda as páginas;
 - o yt-dlp precisa de um runtime de JavaScript em alguns vídeos e leva HTTP 429 quando é chamado rápido demais;
 - muitos vídeos não têm legenda nenhuma.
 
-Esta biblioteca é a etapa de transcrição desse crawler, reescrita como pacote. Em produção, ela gerou 4.633 transcrições:
+Esta biblioteca é a etapa de transcrição desse crawler, reescrita como pacote. Em produção ela fez 4.633 transcrições:
 
 ![Qual método gerou cada transcrição](docs/img/methods.pt-BR.png)
 
@@ -47,7 +47,7 @@ Esta biblioteca é a etapa de transcrição desse crawler, reescrita como pacote
 - **Whisper** cobriu 16%, os vídeos sem legenda.
 - **youtube-transcript-api** entrou em maio de 2026 e pegou 5%.
 
-As porcentagens vêm da ordem que o crawler usava (cookies antes do yt-dlp comum), então mostram qual método bastou, não qual falharia.
+As porcentagens vêm da ordem que o crawler usava (cookies antes do yt-dlp comum). Então mostram qual método bastou, não qual falharia.
 
 Lições que viraram código:
 
@@ -119,7 +119,7 @@ transcriptladder VIDEO_ID OUTRO_ID --srt --memory tl.json        # SRT, vários 
 
 ## Sessão logada (opcional)
 
-Cada vez mais o YouTube responde "Sign in to confirm you're not a bot" ou pede para confirmar a idade. A resposta documentada do yt-dlp é mandar os cookies de uma sessão logada. No crawler do autor, esse caminho gerou 41% das transcrições.
+Cada vez mais o YouTube responde "Sign in to confirm you're not a bot" ou pede para confirmar a idade. A resposta documentada do yt-dlp é mandar os cookies de uma sessão logada. No meu crawler, esse caminho gerou 41% das transcrições.
 
 ```python
 from transcriptladder import Transcriber, YtDlp

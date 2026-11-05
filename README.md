@@ -8,14 +8,14 @@
 
 ![transcriptladder](docs/img/cover.png)
 
-Get the transcript of a YouTube video with whichever method works today. The methods are tried in order:
+Gets the transcript of a YouTube video with whatever method works today. It tries them in order:
 
 1. **`youtube-transcript-api`**: reads the caption track directly.
 2. **Caption URL from yt-dlp's metadata**: downloaded with plain HTTP.
 3. **yt-dlp writing the subtitle file** itself (manual or automatic captions).
 4. **faster-whisper or Whisper** on the audio, when the video has no captions at all.
 
-Each method's success rate is remembered, so one that keeps failing moves down inside its tier. You get clean text, timed segments, SRT and the language.
+It remembers how often each method works, so one that keeps failing drops down inside its tier. You get clean text, timed segments, SRT and the language.
 
 ```python
 from transcriptladder import Transcriber
@@ -33,13 +33,13 @@ else:
 
 ## Where it comes from
 
-The author's product-review site summarises what YouTube reviewers say about each product. That takes the transcript of thousands of videos, and no single method gets them all:
+My product review site sums up what YouTube reviewers say about each product. That takes the transcript of thousands of videos, and no single method gets them all:
 
 - the caption libraries break when YouTube changes its pages;
 - yt-dlp needs a JavaScript runtime for some videos and hits HTTP 429 when called too fast;
 - many videos have no captions at all.
 
-This library is the transcript step of that crawler, rewritten as a package. In production it produced 4,633 transcripts:
+This library is the transcript step of that crawler, rewritten as a package. In production it made 4,633 transcripts:
 
 ![Which method produced each transcript](docs/img/methods.png)
 
@@ -47,7 +47,7 @@ This library is the transcript step of that crawler, rewritten as a package. In 
 - **Whisper** covered 16%, the videos with no captions.
 - **youtube-transcript-api** was added in May 2026 and got 5%.
 
-The shares come from the order the crawler used (cookies before plain yt-dlp), so they show which method was enough, not which one would fail.
+The shares come from the order the crawler used (cookies before plain yt-dlp). So they show which method was enough, not which one would fail.
 
 Lessons that are now code:
 
@@ -119,7 +119,7 @@ transcriptladder VIDEO_ID OTHER_ID --srt --memory tl.json        # SRT, several 
 
 ## Logged-in session (opt-in)
 
-More and more often YouTube answers "Sign in to confirm you're not a bot", or asks to confirm age. yt-dlp's documented answer is to send the cookies of a logged-in session. In the author's crawler that path produced 41% of the transcripts.
+More and more often YouTube answers "Sign in to confirm you're not a bot", or asks to confirm age. yt-dlp's documented answer is to send the cookies of a logged-in session. In my crawler that path produced 41% of the transcripts.
 
 ```python
 from transcriptladder import Transcriber, YtDlp
